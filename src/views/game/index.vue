@@ -6,10 +6,11 @@
       @click="handleControlsLock"
       v-show="instructionsVisible"
     >
-      <h1 style="font-size: 88px; font-family: Inter,Menlo,Consolas">Play / Pause</h1>
+      <h1 style="font-size: 88px; font-family: Inter,Menlo,Consolas">Play</h1>
     </div>
   </div>
   <div id="scene-container" ref="sceneRef"></div>
+  <div class="position-area">{{ position.x }},{{ position.y }},{{ position.z }}</div>
 </template>
 
 <script lang="ts" setup>
@@ -25,6 +26,7 @@ const {
   handleControlsLock,
   blockerVisible,
   instructionsVisible,
+  position,
 } = useMainScene();
 
 onMounted(() => {
@@ -60,5 +62,13 @@ onMounted(() => {
 #scene-container {
   width: 100%;
   height: 100vh;
+}
+
+.position-area {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 20px;
+  font-family: monospace;
 }
 </style>

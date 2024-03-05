@@ -8,11 +8,17 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import rookPath from "@/assets/models/rook.amf";
 import parrotPath from "@/assets/models/Parrot.glb";
 import storkPath from "@/assets/models/Stork.glb";
+import TWEEN from "@tweenjs/tween.js";
 
 export default function () {
   // 控制面板显示
   const blockerVisible = ref(true);
   const instructionsVisible = ref(true);
+  const position = ref({
+    x: 0,
+    y: 0,
+    z: 0,
+  });
   // 获取地板
   const { floor } = useFloor();
 
@@ -144,6 +150,25 @@ export default function () {
   const animate = () => {
     requestAnimationFrame(animate);
     if (controls.isLocked === true) {
+      // 获取玩家位置
+      const playerPosition = controls.getObject().position;
+      const floorHalfSize = 2000 / 2;
+      const minBound = -floorHalfSize;
+      const maxBound = floorHalfSize;
+
+      // 检查玩家是否在边界内，如果不在则调整出去 做一个空气墙
+      if (playerPosition.x < minBound) {
+        playerPosition.x = minBound;
+      } else if (playerPosition.x > maxBound) {
+        playerPosition.x = maxBound;
+      }
+
+      if (playerPosition.z < minBound) {
+        playerPosition.z = minBound;
+      } else if (playerPosition.z > maxBound) {
+        playerPosition.z = maxBound;
+      }
+
       raycaster.ray.origin.copy(controls.getObject().position);
       raycaster.ray.origin.y -= 10;
 
@@ -182,32 +207,25 @@ export default function () {
 
       controls.moveRight(-velocity.x * delta);
       controls.moveForward(-velocity.z * delta);
-
-      controls.getObject().position.y += velocity.y * delta; // new behavior
+      // new behavior
+      controls.getObject().position.y += velocity.y * delta;
 
       if (controls.getObject().position.y < 10) {
         velocity.y = 0;
         controls.getObject().position.y = 10;
-
         canJump = true;
-      }
-
-      // 获取玩家位置
-      const playerPosition = controls.getObject().position;
-      const floorHalfSize = 2000 / 2;
-      const minBound = -floorHalfSize;
-      const maxBound = floorHalfSize;
-
-      if (
-        playerPosition.x < minBound ||
-        playerPosition.x > maxBound ||
-        playerPosition.z < minBound ||
-        playerPosition.z > maxBound
-      ) {
-        console.log("超出地图边界");
       }
     }
 
+    // 更新位置
+    position.value = {
+      x: parseInt(controls.getObject().position.x),
+      y: parseInt(controls.getObject().position.y),
+      z: parseInt(controls.getObject().position.z),
+    };
+
+    TWEEN.update();
+    // 更新帧率
     stats.update();
     // 渲染
     renderer.render(scene, camera);
@@ -215,6 +233,28 @@ export default function () {
 
   const handleControlsLock = () => {
     controls.lock();
+    move();
+  };
+
+  const move = () => {
+    const now = {
+      x: controls.getObject().position.x,
+      y: controls.getObject().position.y,
+      z: controls.getObject().position.z,
+    };
+    var tween = new TWEEN.Tween(now)
+      .to({ x: 999, y: 10, z: -999 }, 3000)
+      // .easing( TWEEN.Easing.Elastic.InOut )
+      .onStart(() => {
+        console.log("tween start");
+      })
+      .onUpdate((obj) => {
+        controls.getObject().position.x = obj.x;
+        controls.getObject().position.y = obj.y;
+        controls.getObject().position.z = obj.z;
+        console.log(obj);
+      })
+      .start();
   };
 
   const onControlsLock = () => {
@@ -304,5 +344,6 @@ export default function () {
     handleControlsLock,
     blockerVisible,
     instructionsVisible,
+    position,
   };
 }
