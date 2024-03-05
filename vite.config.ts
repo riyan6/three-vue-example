@@ -9,5 +9,5 @@ export default defineConfig({
       '@': '/src'
     }
   },
-  assetsInclude: ['**/*.glb', '**/*.gltf']
+  assetsInclude: ['**/*.glb', '**/*.gltf', "**/*.amf"]
 })
