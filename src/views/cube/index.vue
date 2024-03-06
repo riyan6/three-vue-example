@@ -74,7 +74,7 @@
     // 开始渲染
     renderer.render(scene, camera);
   };
-  
+
   const cubeAnimate = () => {
     requestAnimationFrame(cubeAnimate);
   

@@ -144,9 +144,15 @@ export default function () {
     // 监听窗口变化 实时改变场景大小
     window.addEventListener("resize", onWindowResize);
 
+    // 监听触控
+    document.addEventListener("touchstart", onTouchStart, false);
+    document.addEventListener("touchmove", onTouchMove, false);
+    document.addEventListener("touchend", onTouchEnd, false);
+
     animate();
   };
 
+  // 刷新帧
   const animate = () => {
     requestAnimationFrame(animate);
     if (controls.isLocked === true) {
@@ -233,7 +239,6 @@ export default function () {
 
   const handleControlsLock = () => {
     controls.lock();
-    move();
   };
 
   const move = () => {
@@ -267,7 +272,7 @@ export default function () {
     instructionsVisible.value = true;
   };
 
-  // 按下按键
+  // 键盘 按下按键
   const onKeyDown = (event: any) => {
     switch (event.code) {
       case "ArrowUp":
@@ -302,7 +307,7 @@ export default function () {
     }
   };
 
-  // 松开按键
+  // 键盘 松开按键
   const onKeyUp = (event: any) => {
     switch (event.code) {
       case "ArrowUp":
@@ -337,6 +342,60 @@ export default function () {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+
+  let touchStartPos = { x: 0, y: 0 };
+  let touchEndPos = { x: 0, y: 0 };
+
+  // 处理开始触摸事件
+  const onTouchStart = (event: any) => {
+    touchStartPos.x = event.touches[0].clientX;
+    touchStartPos.y = event.touches[0].clientY;
+  };
+
+  // 处理触摸移动事件
+  const onTouchMove = (event: any) => {
+    // 获取滑动当前位置
+    touchEndPos.x = event.touches[0].clientX;
+    touchEndPos.y = event.touches[0].clientY;
+
+    // 计算滑动偏移
+    let delatX = touchEndPos.x - touchStartPos.x;
+    let deltaY = touchEndPos.y - touchStartPos.y;
+
+    // 根据滑动方向和距离模拟 WASD 移动或视角旋转
+
+    if (Math.abs(delatX) > Math.abs(deltaY)) {
+      // 左右滑动
+      if (delatX > 0) {
+        // 右滑
+        moveRight = true;
+        moveLeft = false;
+      } else {
+        // 左滑
+        moveLeft = true;
+        moveRight = false;
+      }
+    } else {
+      // 上下滑动
+      if (deltaY > 0) {
+        // 下滑
+        moveBackward = true;
+        moveForward = false;
+      } else {
+        // 上滑
+        moveForward = true;
+        moveBackward = false;
+      }
+    }
+  };
+
+  // 处理触摸结束事件
+  const onTouchEnd = (event: any) => {
+    moveForward = false;
+    moveBackward = false;
+    moveLeft = false;
+    moveRight = false;
   };
 
   return {
