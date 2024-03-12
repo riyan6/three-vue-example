@@ -24,6 +24,17 @@ const routes: Readonly<RouteRecordRaw[]> = [
         component: () => import('@/views/map/index.vue')
     },
     {
+        path: '/example',
+        name: 'Examples',
+        children: [
+            {
+                path: '/example/first',
+                name: 'FirstExample',
+                component: () => import('@/views/example/first/index.vue'),
+            }
+        ]
+    },
+    {
         path: '/:catchAll(.*)',
         name: 'NotFound',
         component: NotFound

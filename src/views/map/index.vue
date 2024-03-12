@@ -68,7 +68,7 @@ const init = () => {
     flatShading: true,
   });
 
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 20; i++) {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.x = Math.random() * 1600 - 800;
     mesh.position.y = 0;
@@ -134,6 +134,12 @@ const init = () => {
 
       // 移除 mesh
       scene!.remove(mesh);
+
+      // 添加对几何图形和材质的清理
+      if (mesh instanceof THREE.Mesh) {
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+      }
     }
   });
 
