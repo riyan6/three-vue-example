@@ -58,17 +58,17 @@ const init = () => {
   // renderer
   renderer = new THREE.WebGLRenderer({antialias: true});
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(sceneRef.value.clientWidth, sceneRef.value.clientHeight);
-  sceneRef.value.appendChild(renderer.domElement);
+  renderer.setSize(sceneRef.value!.clientWidth, sceneRef.value!.clientHeight);
+  sceneRef.value!.appendChild(renderer.domElement);
 
   // camera
   camera = new THREE.PerspectiveCamera(
       60,
-      sceneRef.value.clientWidth / sceneRef.value.clientHeight,
+      sceneRef.value!.clientWidth / sceneRef.value!.clientHeight,
       1,
       2500
   );
-  camera.position.set(20, 77, 493);
+  camera.position.set(489, 98, -19);
 
   // controls
   controls = new OrbitControls(camera, renderer.domElement);
@@ -101,36 +101,135 @@ const init = () => {
   plane.receiveShadow = true;
   scene.add(plane);
 
-  const helper = new THREE.GridHelper(2000, 100, 0x128dfd, 0x128dfd);
-  helper.position.y = -199;
-  helper.material.opacity = 0.25;
-  helper.material.transparent = true;
-  scene.add(helper);
+  const helper1 = new THREE.GridHelper(3000, 100, 0x68cbe0, 0x68cbe0);
+  helper1.position.y = -199;
+  helper1.material.opacity = 0.25;
+  helper1.material.transparent = true;
+  scene.add(helper1);
 
+  const helper2 = new THREE.GridHelper(3000, 100, 0xffffff, 0xffffff);  // 颜色稍有不同
+  helper2.position.y = -190;  // 确保与helper1在同一高度，形成双重线条效果
+  helper2.material.opacity = 0.25;
+  helper2.material.transparent = true;
+  scene.add(helper2);
+
+  // 添加机台模型
   const gltfLoader = new GLTFLoader();
   gltfLoader.load(cxjPath, (obj) => {
     const model = obj.scene;
-    model.scale.set(500,500,500)
-    model.position.set(0,0,0)
-    console.log(model)
-
+    model.scale.set(500, 500, 500)
+    model.position.set(0, 0, 0)
     // 计算模型的边界
     const box = new THREE.Box3().setFromObject(model);
-
     // 计算模型的高度
     const modelHeight = box.max.y - box.min.y;
-
     // 将模型沿y轴向下移动模型高度的一半，使其在原点处
     model.position.y -= modelHeight;
-
+    // 场景添加模型
     scene!.add(model);
   });
+
+  // 创建canvas，并在其上绘制文字
+  let canvas = document.createElement('canvas');
+  let ctx: CanvasRenderingContext2D | null = canvas.getContext('2d');
+  // 设置canvas背景颜色
+  ctx!.fillStyle = '#3265cb';
+  // 将背景色应用于整个canvas
+  ctx!.fillRect(0, 0, canvas.width, canvas.height);
+  // 调整文字样式
+  ctx!.font = '32px Arial';
+  // 设置文字颜色
+  ctx!.fillStyle = 'white';
+
+  // 设置对齐方式
+  ctx!.textAlign = 'center'; // 在水平方向上，设置文本对齐方式为居中
+  ctx!.textBaseline = 'middle'; // 在垂直方向上，设置文本的基线在中心
+
+  // 设置文字内容和位置
+  let text = '45号ZB48包装机';
+  ctx!.fillText(text, canvas.width / 2, canvas.height / 2); // 将文字位置设在canvas的中央
+
+  // 创建广告牌材质
+  let texture = new THREE.Texture(canvas);
+  texture.needsUpdate = true;
+  // 前面的材质，有文字的部分
+  let frontMaterial = new THREE.MeshBasicMaterial({map: texture});
+
+  // 背面的材质
+  let backMaterial = new THREE.MeshBasicMaterial({color: '#3265cb'});
+
+  // 创建两个平面几何体
+  let planeFront = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), frontMaterial);
+  let planeBack = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), backMaterial);
+
+  // 将背面的平面几何体翻转180度
+  planeBack.rotation.y = Math.PI;
+  // 创建一个组，用于存放前后两面的平面几何体
+  let billboard = new THREE.Group();
+  billboard.add(planeFront);
+  billboard.add(planeBack);
+
+  // 设置立牌位置，根据你的3D模型，你可能需要调整这个位置
+  billboard.position.setY(10);
+  billboard.rotation.y = THREE.MathUtils.degToRad(90)
+  scene.add(billboard);
+
+  // 创建一个新的平面几何体
+  // 创建一个点光源并添加到场景内
+  var pointLight = new THREE.PointLight(0xffffff, 1, 3000);
+  pointLight.position.set(0, 0, 0);
+  scene.add(pointLight);
+
+  // 添加一个对应光源的helper
+  var pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
+  scene.add(pointLightHelper);
+
+  circle = new THREE.RingGeometry(ringInnerRadius, lightRadius, 100);
+  material = new THREE.MeshBasicMaterial({
+    color: 0x84a8e2, // 这是圆形颜色，你可以根据需要更改
+    side: THREE.DoubleSide
+  });
+  meshCircle = new THREE.Mesh(circle, material);
+  meshCircle.position.set(0, -200, 0); // 这个是圆形位置
+  meshCircle.rotateX(-Math.PI / 2);
+  scene.add(meshCircle);
 
   // 动画
   animate();
 }
 
+let ringInnerRadius = 200;
+let lightRadius = 0;
+let material: THREE.MeshBasicMaterial | null = null;
+let circle: THREE.RingGeometry | null = null;
+let meshCircle: THREE.Mesh | null = null;
+
 const animate = () => {
+  // 更新光圈移动半径
+  if (lightRadius > 1500) {  // 圆形半径大于地板尺寸的一半，即超出地板
+    lightRadius = 50;  // 外半径重置为50
+    ringInnerRadius = 0; // 内半径重置为0
+    scene!.remove(meshCircle!); // 移除旧的环形
+
+    // 重新生成新的环形
+    circle = new THREE.RingGeometry(ringInnerRadius, lightRadius, 32);
+    meshCircle = new THREE.Mesh(circle, material!);
+    meshCircle.position.set(0, -200, 0);
+    meshCircle.rotateX(-Math.PI / 2);
+    scene!.add(meshCircle);
+  } else {
+    lightRadius += 12;  // 外半径逐渐增大
+    ringInnerRadius += 12; //内半径逐渐增大
+    scene!.remove(meshCircle!); // 移除旧的环形
+
+    // 根据新的半径生成新的环形
+    circle = new THREE.RingGeometry(ringInnerRadius, lightRadius, 32);
+    meshCircle = new THREE.Mesh(circle, material!);
+    meshCircle.position.set(0, -200, 0);
+    meshCircle.rotateX(-Math.PI / 2);
+    scene!.add(meshCircle);
+  }
+
   requestAnimationFrame(animate);
   controls!.update();
   renderer!.render(scene!, camera!);
@@ -151,9 +250,9 @@ const getScale = (width = 1920, height = 1080) => {
 };
 
 const onWindowResize = () => {
-  camera!.aspect = sceneRef.value.clientWidth / sceneRef.value.clientHeight;
+  camera!.aspect = sceneRef.value!.clientWidth / sceneRef.value!.clientHeight;
   camera!.updateProjectionMatrix();
-  renderer!.setSize(sceneRef.value.clientWidth, sceneRef.value.clientHeight);
+  renderer!.setSize(sceneRef.value!.clientWidth, sceneRef.value!.clientHeight);
 
   resize();
 };
