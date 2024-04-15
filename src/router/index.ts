@@ -40,6 +40,11 @@ const routes: Readonly<RouteRecordRaw[]> = [
         component: () => import('@/views/dataScreen/index.vue')
     },
     {
+        path: '/tres',
+        name: 'tres',
+        component: () => import('@/views/tres/index.vue')
+    },
+    {
         path: '/:catchAll(.*)',
         name: 'NotFound',
         component: NotFound

@@ -3,7 +3,7 @@
     <div class="data-screen-content" ref="dataScreenRef">
       <div class="data-screen-scene" ref="sceneRef"></div>
       <div class="data-screen-header">
-        <h2>标题五个字</h2>
+        <h2>XXX设备监控平台</h2>
       </div>
       <div class="data-screen-main">
         <div class="data-screen-left">
@@ -106,9 +106,10 @@ const init = () => {
   helper1.material.opacity = 0.25;
   helper1.material.transparent = true;
   scene.add(helper1);
-
-  const helper2 = new THREE.GridHelper(3000, 100, 0xffffff, 0xffffff);  // 颜色稍有不同
-  helper2.position.y = -190;  // 确保与helper1在同一高度，形成双重线条效果
+  // 颜色稍有不同
+  const helper2 = new THREE.GridHelper(3000, 100, 0xffffff, 0xffffff);
+  // 确保与helper1在同一高度，形成双重线条效果
+  helper2.position.y = -190;
   helper2.material.opacity = 0.25;
   helper2.material.transparent = true;
   scene.add(helper2);
@@ -129,49 +130,9 @@ const init = () => {
     scene!.add(model);
   });
 
-  // 创建canvas，并在其上绘制文字
-  let canvas = document.createElement('canvas');
-  let ctx: CanvasRenderingContext2D | null = canvas.getContext('2d');
-  // 设置canvas背景颜色
-  ctx!.fillStyle = '#3265cb';
-  // 将背景色应用于整个canvas
-  ctx!.fillRect(0, 0, canvas.width, canvas.height);
-  // 调整文字样式
-  ctx!.font = '32px Arial';
-  // 设置文字颜色
-  ctx!.fillStyle = 'white';
-
-  // 设置对齐方式
-  ctx!.textAlign = 'center'; // 在水平方向上，设置文本对齐方式为居中
-  ctx!.textBaseline = 'middle'; // 在垂直方向上，设置文本的基线在中心
-
-  // 设置文字内容和位置
-  let text = '45号ZB48包装机';
-  ctx!.fillText(text, canvas.width / 2, canvas.height / 2); // 将文字位置设在canvas的中央
-
-  // 创建广告牌材质
-  let texture = new THREE.Texture(canvas);
-  texture.needsUpdate = true;
-  // 前面的材质，有文字的部分
-  let frontMaterial = new THREE.MeshBasicMaterial({map: texture});
-
-  // 背面的材质
-  let backMaterial = new THREE.MeshBasicMaterial({color: '#3265cb'});
-
-  // 创建两个平面几何体
-  let planeFront = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), frontMaterial);
-  let planeBack = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), backMaterial);
-
-  // 将背面的平面几何体翻转180度
-  planeBack.rotation.y = Math.PI;
-  // 创建一个组，用于存放前后两面的平面几何体
-  let billboard = new THREE.Group();
-  billboard.add(planeFront);
-  billboard.add(planeBack);
-
-  // 设置立牌位置，根据你的3D模型，你可能需要调整这个位置
-  billboard.position.setY(10);
-  billboard.rotation.y = THREE.MathUtils.degToRad(90)
+  billboard = createBillboard("45号ZB48包装机");
+  billboard.position.set(0, 10, 0);
+  billboard.scale.set(100, 50, 50);
   scene.add(billboard);
 
   // 创建一个新的平面几何体
@@ -198,6 +159,7 @@ const init = () => {
   animate();
 }
 
+let billboard: THREE.Sprite | null = null;
 let ringInnerRadius = 200;
 let lightRadius = 0;
 let material: THREE.MeshBasicMaterial | null = null;
@@ -230,9 +192,45 @@ const animate = () => {
     scene!.add(meshCircle);
   }
 
+  // 看向摄像头
+  billboard!.lookAt(camera!.position);
+
   requestAnimationFrame(animate);
   controls!.update();
   renderer!.render(scene!, camera!);
+}
+
+// 创建看板
+const createBillboard = (text: string) => {
+  var canvas = document.createElement('canvas');
+  var ctx: CanvasRenderingContext2D | null = canvas.getContext('2d');
+  
+  // 设置canvas的尺寸
+  canvas.width = 512;
+  canvas.height = 128;
+  
+  // 填充背景色
+  ctx!.fillStyle = '#3265cb';
+  ctx!.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // 设置文字样式
+  ctx!.font = '60px Arial';
+  ctx!.fillStyle = 'white';
+  
+  // 将文字写在canvas中央
+  ctx!.textAlign = 'center';
+  ctx!.textBaseline = 'middle';
+  ctx!.fillText(text, canvas.width / 2, canvas.height / 2);
+  
+  // 创建一个纹理，其源为canvas
+  var texture = new THREE.Texture(canvas);
+  texture.needsUpdate = true;
+  
+  // 创建一个material，将此纹理应用于material上
+  var material = new THREE.SpriteMaterial({map: texture});
+  
+  // 然后创建一个sprite并返回
+  return new THREE.Sprite(material);
 }
 
 // 设置响应式
