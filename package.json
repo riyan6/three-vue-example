@@ -13,6 +13,7 @@
     "@tresjs/core": "^3.8.1",
     "@tweenjs/tween.js": "^23.1.1",
     "@types/three": "^0.163.0",
+    "element-plus": "^2.7.0",
     "three": "^0.163.0",
     "tweakpane": "^4.0.3",
     "vue": "^3.4.19",

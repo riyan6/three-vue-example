@@ -3,18 +3,30 @@
     <div class="data-screen-content" ref="dataScreenRef">
       <div class="data-screen-scene" ref="sceneRef"></div>
       <div class="data-screen-header">
-        <h2>XXX设备监控平台</h2>
+        <h2>XXX设备监控平台 ({{ pos.x }},{{ pos.y }},{{ pos.z }})</h2>
       </div>
       <div class="data-screen-main">
-        <div class="data-screen-left">
+        <div class="data-screen-left" v-if="showBothSideInfo">
           <div class="data-screen-left-top">board_1</div>
           <div class="data-screen-left-center">board_2</div>
           <div class="data-screen-left-bottom">board_3</div>
         </div>
-        <div class="data-screen-right">
+        <div class="data-screen-right" v-if="showBothSideInfo">
           <div class="data-screen-right-top">board_4</div>
           <div class="data-screen-right-center">board_5</div>
           <div class="data-screen-right-bottom">board_6</div>
+        </div>
+        <div class="data-screen-footer">
+          <el-button
+            :type="isRoamingMode ? 'primary' : ''"
+            @click="switchRoamingMode"
+            >漫游模式：{{ isRoamingMode ? "开" : "关" }}</el-button
+          >
+          <el-button
+            :type="showBothSideInfo ? 'primary' : ''"
+            @click="showBothSideInfo = !showBothSideInfo"
+            >显示两侧信息：{{ showBothSideInfo ? "是" : "否" }}</el-button
+          >
         </div>
       </div>
     </div>
@@ -23,18 +35,36 @@
 
 <script setup lang="ts">
 import * as THREE from "three";
-import {onBeforeUnmount, onMounted, ref} from "vue";
-import {OrbitControls} from "three/examples/jsm/controls/OrbitControls.js";
-import cxjPath from '@/assets/models/cxj1.glb';
-import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader.js";
+import { onBeforeUnmount, onMounted, ref, h } from "vue";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import cxjPath from "@/assets/models/cxj1.glb";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { useSprite } from "./scene";
+import { reactive } from "vue";
+import { ElMessage } from "element-plus";
+// import useLightCircle from './scene/useLightCircle'
 
-const dataScreenRef = ref<HTMLElement | null>(null);
-const sceneRef = ref<HTMLElement | null>(null);
+// 显示两边信息
+const showBothSideInfo = ref(false);
+// 漫游模式
+const isRoamingMode = ref(false);
+// 坐标信息
+const pos = reactive({
+  x: "0",
+  y: "0",
+  z: "0",
+});
 
-let scene: THREE.Scene | null = null;
-let camera: THREE.PerspectiveCamera | null = null;
-let renderer: THREE.WebGLRenderer | null = null;
-let controls: OrbitControls | null = null;
+const dataScreenRef = ref<HTMLElement | any>(null);
+const sceneRef = ref<HTMLElement | any>(null);
+
+let scene: THREE.Scene | any = null;
+let camera: THREE.PerspectiveCamera | any = null;
+let renderer: THREE.WebGLRenderer | any = null;
+let controls: OrbitControls | any = null;
+
+const { createCanvasSprite } = useSprite();
+// const { createLightCircle, lightCircleLoop } = useLightCircle();
 
 onMounted(() => {
   if (dataScreenRef.value) {
@@ -44,10 +74,14 @@ onMounted(() => {
   }
   init();
   window.addEventListener("resize", onWindowResize);
-})
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+});
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onWindowResize);
+  window.removeEventListener("keydown", onKeyDown);
+  window.removeEventListener("keyup", onKeyUp);
 });
 
 const init = () => {
@@ -56,19 +90,20 @@ const init = () => {
   scene.background = new THREE.Color(0x252f4a);
 
   // renderer
-  renderer = new THREE.WebGLRenderer({antialias: true});
+  renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(sceneRef.value!.clientWidth, sceneRef.value!.clientHeight);
   sceneRef.value!.appendChild(renderer.domElement);
 
   // camera
   camera = new THREE.PerspectiveCamera(
-      60,
-      sceneRef.value!.clientWidth / sceneRef.value!.clientHeight,
-      1,
-      2500
+    60,
+    sceneRef.value!.clientWidth / sceneRef.value!.clientHeight,
+    1,
+    2500
   );
   camera.position.set(489, 98, -19);
+  // camera.position.set(0,0,0);
 
   // controls
   controls = new OrbitControls(camera, renderer.domElement);
@@ -94,7 +129,10 @@ const init = () => {
   // 添加地板
   const planeGeometry = new THREE.PlaneGeometry(3000, 3000);
   planeGeometry.rotateX(-Math.PI / 2);
-  const planeMaterial = new THREE.ShadowMaterial({color: 0x000000, opacity: 0.2});
+  const planeMaterial = new THREE.ShadowMaterial({
+    color: 0x000000,
+    opacity: 0.2,
+  });
 
   const plane = new THREE.Mesh(planeGeometry, planeMaterial);
   plane.position.y = -200;
@@ -106,6 +144,7 @@ const init = () => {
   helper1.material.opacity = 0.25;
   helper1.material.transparent = true;
   scene.add(helper1);
+
   // 颜色稍有不同
   const helper2 = new THREE.GridHelper(3000, 100, 0xffffff, 0xffffff);
   // 确保与helper1在同一高度，形成双重线条效果
@@ -118,120 +157,141 @@ const init = () => {
   const gltfLoader = new GLTFLoader();
   gltfLoader.load(cxjPath, (obj) => {
     const model = obj.scene;
-    model.scale.set(500, 500, 500)
-    model.position.set(0, 0, 0)
+    model.scale.set(500, 500, 500);
+    model.position.set(0, 0, 0);
     // 计算模型的边界
     const box = new THREE.Box3().setFromObject(model);
     // 计算模型的高度
     const modelHeight = box.max.y - box.min.y;
     // 将模型沿y轴向下移动模型高度的一半，使其在原点处
     model.position.y -= modelHeight;
+
+    const sprite = createCanvasSprite(
+      "机台名称:包装机1#  当前牌号:牌号A  运行状态：正常运行"
+    );
+    model.children.push(sprite);
     // 场景添加模型
-    scene!.add(model);
+    scene.add(model);
   });
+  //
+  // billboard = createBillboard(['机台名称：包装机1#', '当前牌号：牌号A', '运行状态：正常运行']);
+  // billboard.position.set(0, 10, 0);
+  // billboard.scale.set(100, 50, 50);
+  // scene.add(billboard);
 
-  billboard = createBillboard("45号ZB48包装机");
-  billboard.position.set(0, 10, 0);
-  billboard.scale.set(100, 50, 50);
-  scene.add(billboard);
-
-  // 创建一个新的平面几何体
   // 创建一个点光源并添加到场景内
-  var pointLight = new THREE.PointLight(0xffffff, 1, 3000);
-  pointLight.position.set(0, 0, 0);
-  scene.add(pointLight);
+  // const pointLight = new THREE.PointLight(0xffffff, 1, 3000);
+  // pointLight.position.set(0, 0, 0);
+  // scene.add(pointLight);
 
   // 添加一个对应光源的helper
-  var pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
-  scene.add(pointLightHelper);
+  // const pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
+  // scene.add(pointLightHelper);
 
-  circle = new THREE.RingGeometry(ringInnerRadius, lightRadius, 100);
-  material = new THREE.MeshBasicMaterial({
-    color: 0x84a8e2, // 这是圆形颜色，你可以根据需要更改
-    side: THREE.DoubleSide
-  });
-  meshCircle = new THREE.Mesh(circle, material);
-  meshCircle.position.set(0, -200, 0); // 这个是圆形位置
-  meshCircle.rotateX(-Math.PI / 2);
-  scene.add(meshCircle);
+  // const meshCircle = createLightCircle();
+  // scene.add(meshCircle)
 
   // 动画
   animate();
-}
-
-let billboard: THREE.Sprite | null = null;
-let ringInnerRadius = 200;
-let lightRadius = 0;
-let material: THREE.MeshBasicMaterial | null = null;
-let circle: THREE.RingGeometry | null = null;
-let meshCircle: THREE.Mesh | null = null;
+};
 
 const animate = () => {
-  // 更新光圈移动半径
-  if (lightRadius > 1500) {  // 圆形半径大于地板尺寸的一半，即超出地板
-    lightRadius = 50;  // 外半径重置为50
-    ringInnerRadius = 0; // 内半径重置为0
-    scene!.remove(meshCircle!); // 移除旧的环形
-
-    // 重新生成新的环形
-    circle = new THREE.RingGeometry(ringInnerRadius, lightRadius, 32);
-    meshCircle = new THREE.Mesh(circle, material!);
-    meshCircle.position.set(0, -200, 0);
-    meshCircle.rotateX(-Math.PI / 2);
-    scene!.add(meshCircle);
-  } else {
-    lightRadius += 12;  // 外半径逐渐增大
-    ringInnerRadius += 12; //内半径逐渐增大
-    scene!.remove(meshCircle!); // 移除旧的环形
-
-    // 根据新的半径生成新的环形
-    circle = new THREE.RingGeometry(ringInnerRadius, lightRadius, 32);
-    meshCircle = new THREE.Mesh(circle, material!);
-    meshCircle.position.set(0, -200, 0);
-    meshCircle.rotateX(-Math.PI / 2);
-    scene!.add(meshCircle);
-  }
-
-  // 看向摄像头
-  billboard!.lookAt(camera!.position);
+  // lightCircleLoop(scene)
 
   requestAnimationFrame(animate);
   controls!.update();
   renderer!.render(scene!, camera!);
-}
 
-// 创建看板
-const createBillboard = (text: string) => {
-  var canvas = document.createElement('canvas');
-  var ctx: CanvasRenderingContext2D | null = canvas.getContext('2d');
-  
-  // 设置canvas的尺寸
-  canvas.width = 512;
-  canvas.height = 128;
-  
-  // 填充背景色
-  ctx!.fillStyle = '#3265cb';
-  ctx!.fillRect(0, 0, canvas.width, canvas.height);
-  
-  // 设置文字样式
-  ctx!.font = '60px Arial';
-  ctx!.fillStyle = 'white';
-  
-  // 将文字写在canvas中央
-  ctx!.textAlign = 'center';
-  ctx!.textBaseline = 'middle';
-  ctx!.fillText(text, canvas.width / 2, canvas.height / 2);
-  
-  // 创建一个纹理，其源为canvas
-  var texture = new THREE.Texture(canvas);
-  texture.needsUpdate = true;
-  
-  // 创建一个material，将此纹理应用于material上
-  var material = new THREE.SpriteMaterial({map: texture});
-  
-  // 然后创建一个sprite并返回
-  return new THREE.Sprite(material);
-}
+  // 更新坐标
+  pos.x = Number(camera.position.x).toFixed(2);
+  pos.y = Number(camera.position.y).toFixed(2);
+  pos.z = Number(camera.position.z).toFixed(2);
+};
+
+// 在el-button点击事件触发时，切换漫游模式
+const switchRoamingMode = () => {
+  isRoamingMode.value = !isRoamingMode.value;
+  if (isRoamingMode.value) {
+    controls.enabled = false; // 开启漫游模式时，禁用 OrbitControls
+    ElMessage({
+      message: h("p", { style: "line-height: 1; font-size: 14px" }, [
+        h("p", null, [
+          h("span", null, "请使用 "),
+          h("span", { style: "color: teal" }, "W"),
+          h("span", { style: "color: teal" }, " A "),
+          h("span", { style: "color: teal" }, "S "),
+          h("span", { style: "color: teal" }, "D"),
+          h("span", null, "和 "),
+          h("span", { style: "color: teal" }, "Q "),
+          h("span", { style: "color: teal" }, "E "),
+          h("span", null, "移动"),
+        ]),
+        h("br", null, ""),
+        h("p", null, [
+          h("span", null, "使用"),
+          h("span", { style: "color: teal" }, " + "),
+          h("span", null, "和"),
+          h("span", { style: "color: teal" }, " - "),
+          h("span", null, "控制移动速度"),
+        ]),
+      ]),
+      duration: 0,
+    });
+  } else {
+    controls.enabled = true; // 关闭漫游模式时，启用 OrbitControls
+  }
+};
+
+// 定义一个用于移动相机的方法
+// direction为移动方向， 1为前后左右， -1为上下
+// command为移动命令，w,s,a,d,q,e 对应 上，下，左，右，上升，下降
+const moveCamera = (direction: any, command: any) => {
+  // adjust为移动步长，可根据实际情况调整
+  const adjust = 20;
+
+  switch (command) {
+    case "w":
+      camera.position.z -= adjust * direction; // 前
+      break;
+    case "s":
+      camera.position.z += adjust * direction; // 后
+      break;
+    case "a":
+      camera.position.x -= adjust * direction; // 左
+      break;
+    case "d":
+      camera.position.x += adjust * direction; // 右
+      break;
+    case "q":
+      camera.position.y -= adjust; // 上升
+      break;
+    case "e":
+      camera.position.y += adjust; // 下降
+      break;
+  }
+};
+
+// 定义键盘按下事件的回调
+const onKeyDown = (event: any) => {
+  if (!isRoamingMode.value) return; // 如果不在漫游模式，不做操作
+
+  const key = event.key.toLowerCase();
+  if (["w", "s", "a", "d"].includes(key)) {
+    moveCamera(1, key);
+  } else if (["q", "e"].includes(key)) {
+    moveCamera(-1, key);
+  }
+};
+
+// 定义键盘松开事件的回调
+const onKeyUp = (event: any) => {
+  if (!isRoamingMode.value) return; // 如果不在漫游模式，不做操作
+
+  const key = event.key.toLowerCase();
+  if (["w", "s", "a", "d", "q", "e"].includes(key)) {
+    moveCamera(0, key);
+  }
+};
 
 // 设置响应式
 const resize = () => {
