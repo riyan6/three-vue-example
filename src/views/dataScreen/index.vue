@@ -37,6 +37,7 @@
 import * as THREE from "three";
 import { onBeforeUnmount, onMounted, ref, h } from "vue";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { FlyControls } from "three/addons/controls/FlyControls.js";
 import cxjPath from "@/assets/models/cxj1.glb";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { useSprite } from "./scene";
@@ -58,10 +59,12 @@ const pos = reactive({
 const dataScreenRef = ref<HTMLElement | any>(null);
 const sceneRef = ref<HTMLElement | any>(null);
 
+const clock = new THREE.Clock();
 let scene: THREE.Scene | any = null;
 let camera: THREE.PerspectiveCamera | any = null;
 let renderer: THREE.WebGLRenderer | any = null;
-let controls: OrbitControls | any = null;
+let orbitControls: OrbitControls | any = null;
+let flyControls: FlyControls | any = null;
 
 const { createCanvasSprite } = useSprite();
 // const { createLightCircle, lightCircleLoop } = useLightCircle();
@@ -74,14 +77,10 @@ onMounted(() => {
   }
   init();
   window.addEventListener("resize", onWindowResize);
-  window.addEventListener("keydown", onKeyDown);
-  window.addEventListener("keyup", onKeyUp);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onWindowResize);
-  window.removeEventListener("keydown", onKeyDown);
-  window.removeEventListener("keyup", onKeyUp);
 });
 
 const init = () => {
@@ -105,14 +104,23 @@ const init = () => {
   camera.position.set(489, 98, -19);
   // camera.position.set(0,0,0);
 
-  // controls
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.screenSpacePanning = false;
-  controls.minDistance = 100;
-  controls.maxDistance = 1000;
-  controls.maxPolarAngle = Math.PI / 2;
+  // orbitControls
+  orbitControls = new OrbitControls(camera, renderer.domElement);
+  orbitControls.enableDamping = true;
+  orbitControls.dampingFactor = 0.05;
+  orbitControls.screenSpacePanning = false;
+  orbitControls.minDistance = 100;
+  orbitControls.maxDistance = 1000;
+  orbitControls.maxPolarAngle = Math.PI / 2;
+
+  // flyControls
+  flyControls = new FlyControls(camera, renderer.domElement);
+  flyControls.movementSpeed = 500;
+  flyControls.domElement = renderer.domElement;
+  flyControls.rollSpeed = Math.PI / 24;
+  flyControls.autoForward = false;
+  flyControls.dragToLook = false;
+  flyControls.enabled = false;
 
   // lights
   const dirLight1 = new THREE.DirectionalLight(0xffffff, 3);
@@ -196,10 +204,13 @@ const init = () => {
 };
 
 const animate = () => {
+  const delta = clock.getDelta();
   // lightCircleLoop(scene)
 
   requestAnimationFrame(animate);
-  controls!.update();
+  orbitControls.update();
+  flyControls.update(delta);
+
   renderer!.render(scene!, camera!);
 
   // 更新坐标
@@ -208,88 +219,40 @@ const animate = () => {
   pos.z = Number(camera.position.z).toFixed(2);
 };
 
+// const roamingMsg = ref<any>({})
 // 在el-button点击事件触发时，切换漫游模式
 const switchRoamingMode = () => {
   isRoamingMode.value = !isRoamingMode.value;
   if (isRoamingMode.value) {
-    controls.enabled = false; // 开启漫游模式时，禁用 OrbitControls
+    // 开启漫游模式时，禁用 OrbitControls
+    orbitControls.enabled = false;
+    flyControls.enabled = true;
+    // WASD移动，R|F上|下，Q|E滚动，上|下俯仰，左|右偏航
     ElMessage({
       message: h("p", { style: "line-height: 1; font-size: 14px" }, [
         h("p", null, [
-          h("span", null, "请使用 "),
-          h("span", { style: "color: teal" }, "W"),
-          h("span", { style: "color: teal" }, " A "),
-          h("span", { style: "color: teal" }, "S "),
-          h("span", { style: "color: teal" }, "D"),
-          h("span", null, "和 "),
-          h("span", { style: "color: teal" }, "Q "),
-          h("span", { style: "color: teal" }, "E "),
-          h("span", null, "移动"),
-        ]),
-        h("br", null, ""),
-        h("p", null, [
-          h("span", null, "使用"),
-          h("span", { style: "color: teal" }, " + "),
-          h("span", null, "和"),
-          h("span", { style: "color: teal" }, " - "),
-          h("span", null, "控制移动速度"),
+          h("span", { style: "color: teal" }, "WASD"),
+          h("span", null, "移动,"),
+          h("span", { style: "color: teal" }, "RF"),
+          h("span", null, "上下,"),
+          h("span", { style: "color: teal" }, "QE"),
+          h("span", null, "滚动,"),
+          h("span", { style: "color: teal" }, "鼠标滚轮"),
+          h("span", null, "调节俯仰视角,"),
+          h("span", { style: "color: teal" }, "鼠标左键右键"),
+          h("span", null, "拉伸视角"),
         ]),
       ]),
       duration: 0,
+      type: "success",
+      plain: true,
+      offset: 60
     });
   } else {
-    controls.enabled = true; // 关闭漫游模式时，启用 OrbitControls
-  }
-};
-
-// 定义一个用于移动相机的方法
-// direction为移动方向， 1为前后左右， -1为上下
-// command为移动命令，w,s,a,d,q,e 对应 上，下，左，右，上升，下降
-const moveCamera = (direction: any, command: any) => {
-  // adjust为移动步长，可根据实际情况调整
-  const adjust = 20;
-
-  switch (command) {
-    case "w":
-      camera.position.z -= adjust * direction; // 前
-      break;
-    case "s":
-      camera.position.z += adjust * direction; // 后
-      break;
-    case "a":
-      camera.position.x -= adjust * direction; // 左
-      break;
-    case "d":
-      camera.position.x += adjust * direction; // 右
-      break;
-    case "q":
-      camera.position.y -= adjust; // 上升
-      break;
-    case "e":
-      camera.position.y += adjust; // 下降
-      break;
-  }
-};
-
-// 定义键盘按下事件的回调
-const onKeyDown = (event: any) => {
-  if (!isRoamingMode.value) return; // 如果不在漫游模式，不做操作
-
-  const key = event.key.toLowerCase();
-  if (["w", "s", "a", "d"].includes(key)) {
-    moveCamera(1, key);
-  } else if (["q", "e"].includes(key)) {
-    moveCamera(-1, key);
-  }
-};
-
-// 定义键盘松开事件的回调
-const onKeyUp = (event: any) => {
-  if (!isRoamingMode.value) return; // 如果不在漫游模式，不做操作
-
-  const key = event.key.toLowerCase();
-  if (["w", "s", "a", "d", "q", "e"].includes(key)) {
-    moveCamera(0, key);
+    // 关闭漫游模式时，启用 OrbitControls
+    orbitControls.enabled = true;
+    flyControls.enabled = false;
+    ElMessage.closeAll();
   }
 };
 
