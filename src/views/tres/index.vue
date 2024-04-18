@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="container">
     <TresCanvas window-size clear-color="#252f4a" shadows alpha>
       <TresPerspectiveCamera ref="cameraRef" :position="[5, 3, 0]" :fov="60" :aspect="aspectVal" :near="1" :far="2500"/>
@@ -50,4 +50,4 @@ const getModel = async () => {
   height: 100vh;
 }
 
-</style>
+</style> -->

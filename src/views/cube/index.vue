@@ -4,7 +4,7 @@
   
   <script setup lang="ts">
   import { onMounted, ref } from "vue";
-  import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+  import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
   import * as THREE from "three";
   
   const sceneRef = ref(null) as any;

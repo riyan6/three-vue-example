@@ -1,4 +1,4 @@
-import { RouteRecordRaw, createRouter, createWebHistory } from "vue-router";
+import { RouteRecordRaw, createRouter, createWebHashHistory } from "vue-router";
 import HelloWorldVue from "../components/HelloWorld.vue";
 import NotFound from '@/views/notfound/index.vue'
 
@@ -39,11 +39,11 @@ const routes: Readonly<RouteRecordRaw[]> = [
         name: 'dataScreen',
         component: () => import('@/views/dataScreen/index.vue')
     },
-    {
-        path: '/tres',
-        name: 'tres',
-        component: () => import('@/views/tres/index.vue')
-    },
+    // {
+    //     path: '/tres',
+    //     name: 'tres',
+    //     component: () => import('@/views/tres/index.vue')
+    // },
     {
         path: '/:catchAll(.*)',
         name: 'NotFound',
@@ -52,6 +52,6 @@ const routes: Readonly<RouteRecordRaw[]> = [
 ]
 
 export default createRouter({
-    history: createWebHistory(),
+    history: createWebHashHistory(),
     routes
 })

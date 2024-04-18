@@ -7,14 +7,14 @@
       </div>
       <div class="data-screen-main">
         <div class="data-screen-left" v-if="showBothSideInfo">
-          <div class="data-screen-left-top">board_1</div>
-          <div class="data-screen-left-center">board_2</div>
-          <div class="data-screen-left-bottom">board_3</div>
+          <div class="data-screen-left-top">信息1</div>
+          <div class="data-screen-left-center">信息2</div>
+          <div class="data-screen-left-bottom">信息3</div>
         </div>
         <div class="data-screen-right" v-if="showBothSideInfo">
-          <div class="data-screen-right-top">board_4</div>
-          <div class="data-screen-right-center">board_5</div>
-          <div class="data-screen-right-bottom">board_6</div>
+          <div class="data-screen-right-top">信息4</div>
+          <div class="data-screen-right-center">信息5</div>
+          <div class="data-screen-right-bottom">信息6</div>
         </div>
         <div class="data-screen-footer">
           <el-button

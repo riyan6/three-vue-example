@@ -1,11 +1,11 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import {ref, watch, defineExpose, watchEffect} from 'vue';
 import {useRenderLoop} from '@tresjs/core'
 import {DoubleSide, Color, LineCurve3, Vector3, Matrix4} from 'three';
 
 const props = withDefaults(
     defineProps<{
-      position?: Array<number>
+      position?: any
       radius?: number
       maxRadius?: number
       color?: string
@@ -65,7 +65,7 @@ const shader = {
   },
 }
 const TresTubeGeometryRef = ref()
-let originScale = null
+let originScale: any = null
 watch(TresTubeGeometryRef, (newValue, oldValue) => {
   if (newValue && oldValue === undefined) {
     TresTubeGeometryRef.value.computeBoundingBox()
@@ -122,4 +122,4 @@ defineExpose({
     <TresTubeGeometry ref="TresTubeGeometryRef" :args="[tubePath,10, props.radius, 100/*平滑度*/, false]"/>
     <TresShaderMaterial v-bind="shader"/>
   </TresMesh>
-</template>
+</template> -->

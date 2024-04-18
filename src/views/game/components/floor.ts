@@ -7,7 +7,7 @@ import floorNormalPath from "@/assets/textures/floors/FloorsCheckerboard_S_Norma
  * @returns
  */
 export default function () {
-  const color: THREE.Color = new THREE.Color();
+  // const color: THREE.Color = new THREE.Color();
 
   // 创建地板 一个 2000x2000 分为 100 段的地板
   let floorGeometry: any = new THREE.PlaneGeometry(2000, 2000, 500, 500);

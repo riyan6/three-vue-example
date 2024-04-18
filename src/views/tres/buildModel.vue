@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 const props = withDefaults(defineProps<{
   model: any
 }>(), {})
@@ -13,4 +13,4 @@ pObject.position.set(0,0,0)
 <template>
   <primitive :object="pObject" />
 </template>
-
+ -->

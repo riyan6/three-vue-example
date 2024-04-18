@@ -3,9 +3,9 @@ import { PointerLockControls } from "three/examples/jsm/controls/PointerLockCont
 import { Ref, ref } from "vue";
 import useFloor from "../components/floor";
 import Stats from "three/examples/jsm/libs/stats.module.js";
-import { AMFLoader } from "three/examples/jsm/loaders/AMFLoader.js";
+// import { AMFLoader } from "three/examples/jsm/loaders/AMFLoader.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import rookPath from "@/assets/models/rook.amf";
+// import rookPath from "@/assets/models/rook.amf";
 import parrotPath from "@/assets/models/Parrot.glb";
 import storkPath from "@/assets/models/Stork.glb";
 import TWEEN from "@tweenjs/tween.js";
@@ -94,14 +94,14 @@ export default function () {
     scene.add(floor);
 
     // 添加国际象棋
-    const amfLoader = new AMFLoader();
-    amfLoader.load(rookPath, (obj) => {
-      obj.scale.set(50, 50, 50);
-      obj.position.set(100, 0, 100);
-      obj.rotation.x = -(Math.PI / 2);
-      scene.add(obj);
-      objects.push(obj);
-    });
+    // const amfLoader = new AMFLoader();
+    // amfLoader.load(rookPath, (obj) => {
+    //   obj.scale.set(50, 50, 50);
+    //   obj.position.set(100, 0, 100);
+    //   obj.rotation.x = -(Math.PI / 2);
+    //   scene.add(obj);
+    //   objects.push(obj);
+    // });
 
     // 添加鸟
     const gltfLoader = new GLTFLoader();
@@ -241,26 +241,26 @@ export default function () {
     controls.lock();
   };
 
-  const move = () => {
-    const now = {
-      x: controls.getObject().position.x,
-      y: controls.getObject().position.y,
-      z: controls.getObject().position.z,
-    };
-    var tween = new TWEEN.Tween(now)
-      .to({ x: 999, y: 10, z: -999 }, 3000)
-      // .easing( TWEEN.Easing.Elastic.InOut )
-      .onStart(() => {
-        console.log("tween start");
-      })
-      .onUpdate((obj) => {
-        controls.getObject().position.x = obj.x;
-        controls.getObject().position.y = obj.y;
-        controls.getObject().position.z = obj.z;
-        console.log(obj);
-      })
-      .start();
-  };
+  // const move = () => {
+  //   const now = {
+  //     x: controls.getObject().position.x,
+  //     y: controls.getObject().position.y,
+  //     z: controls.getObject().position.z,
+  //   };
+  //   var tween = new TWEEN.Tween(now)
+  //     .to({ x: 999, y: 10, z: -999 }, 3000)
+  //     // .easing( TWEEN.Easing.Elastic.InOut )
+  //     .onStart(() => {
+  //       console.log("tween start");
+  //     })
+  //     .onUpdate((obj) => {
+  //       controls.getObject().position.x = obj.x;
+  //       controls.getObject().position.y = obj.y;
+  //       controls.getObject().position.z = obj.z;
+  //       console.log(obj);
+  //     })
+  //     .start();
+  // };
 
   const onControlsLock = () => {
     blockerVisible.value = false;
@@ -391,7 +391,7 @@ export default function () {
   };
 
   // 处理触摸结束事件
-  const onTouchEnd = (event: any) => {
+  const onTouchEnd = () => {
     moveForward = false;
     moveBackward = false;
     moveLeft = false;
