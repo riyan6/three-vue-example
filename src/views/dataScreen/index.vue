@@ -3,7 +3,8 @@
     <div class="data-screen-content" ref="dataScreenRef">
       <div class="data-screen-scene" ref="sceneRef"></div>
       <div class="data-screen-header">
-        <h2>XXX设备监控平台 ({{ pos.x }},{{ pos.y }},{{ pos.z }})</h2>
+        <h2>XXX设备监控平台</h2>
+        <div class="logo"></div>
       </div>
       <div class="data-screen-main">
         <div class="data-screen-left" v-if="showBothSideInfo">
@@ -41,20 +42,13 @@ import { FlyControls } from "three/addons/controls/FlyControls.js";
 import cxjPath from "@/assets/models/cxj1.glb";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { useSprite } from "./scene";
-import { reactive } from "vue";
 import { ElMessage } from "element-plus";
 // import useLightCircle from './scene/useLightCircle'
 
 // 显示两边信息
-const showBothSideInfo = ref(false);
+const showBothSideInfo = ref(true);
 // 漫游模式
 const isRoamingMode = ref(false);
-// 坐标信息
-const pos = reactive({
-  x: "0",
-  y: "0",
-  z: "0",
-});
 
 const dataScreenRef = ref<HTMLElement | any>(null);
 const sceneRef = ref<HTMLElement | any>(null);
@@ -83,6 +77,9 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", onWindowResize);
 });
 
+// 开始时间
+let start = Date.now();
+
 const init = () => {
   // scene
   scene = new THREE.Scene();
@@ -101,8 +98,7 @@ const init = () => {
     1,
     2500
   );
-  camera.position.set(489, 98, -19);
-  // camera.position.set(0,0,0);
+  camera.position.set(758, 182, 21);
 
   // orbitControls
   orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -131,35 +127,48 @@ const init = () => {
   dirLight2.position.set(-1, -1, -1);
   scene.add(dirLight2);
 
-  const ambientLight = new THREE.AmbientLight(0x555555);
-  scene.add(ambientLight);
-
   // 添加地板
-  const planeGeometry = new THREE.PlaneGeometry(3000, 3000);
-  planeGeometry.rotateX(-Math.PI / 2);
-  const planeMaterial = new THREE.ShadowMaterial({
-    color: 0x000000,
-    opacity: 0.2,
+  const textureLoader = new THREE.TextureLoader();
+
+  textureLoader.load("/images/geometry10.png", function (texture) {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+    const grids = 25;
+    const singleGridSize = 3000 / grids;
+
+    for (let i = 0; i < grids; i++) {
+      for (let j = 0; j < grids; j++) {
+        const planeGeometry = new THREE.PlaneGeometry(
+          singleGridSize,
+          singleGridSize
+        );
+        planeGeometry.rotateX(-Math.PI / 2);
+
+        const planeMaterial = new THREE.MeshLambertMaterial({
+          map: texture,
+          transparent: true,
+          // 在这里设置材质的颜色
+          color: new THREE.Color("#2f5dbd"),
+        });
+
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.name = 'floorTile'
+        plane.position.y = -200;
+        plane.position.x = (i + 0.5 - grids / 2) * singleGridSize;
+        plane.position.z = (j + 0.5 - grids / 2) * singleGridSize;
+        scene.add(plane);
+      }
+    }
   });
 
-  const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-  plane.position.y = -200;
-  plane.receiveShadow = true;
-  scene.add(plane);
+  const ambientLight = new THREE.AmbientLight(0xffffff);
+  scene.add(ambientLight);
 
-  const helper1 = new THREE.GridHelper(3000, 100, 0x68cbe0, 0x68cbe0);
-  helper1.position.y = -199;
-  helper1.material.opacity = 0.25;
-  helper1.material.transparent = true;
-  scene.add(helper1);
-
-  // 颜色稍有不同
-  const helper2 = new THREE.GridHelper(3000, 100, 0xffffff, 0xffffff);
-  // 确保与helper1在同一高度，形成双重线条效果
-  helper2.position.y = -190;
-  helper2.material.opacity = 0.25;
-  helper2.material.transparent = true;
-  scene.add(helper2);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  directionalLight.position.set(1, 1, 1).normalize();
+  scene.add(directionalLight);
 
   // 添加机台模型
   const gltfLoader = new GLTFLoader();
@@ -181,23 +190,6 @@ const init = () => {
     // 场景添加模型
     scene.add(model);
   });
-  //
-  // billboard = createBillboard(['机台名称：包装机1#', '当前牌号：牌号A', '运行状态：正常运行']);
-  // billboard.position.set(0, 10, 0);
-  // billboard.scale.set(100, 50, 50);
-  // scene.add(billboard);
-
-  // 创建一个点光源并添加到场景内
-  // const pointLight = new THREE.PointLight(0xffffff, 1, 3000);
-  // pointLight.position.set(0, 0, 0);
-  // scene.add(pointLight);
-
-  // 添加一个对应光源的helper
-  // const pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
-  // scene.add(pointLightHelper);
-
-  // const meshCircle = createLightCircle();
-  // scene.add(meshCircle)
 
   // 动画
   animate();
@@ -211,12 +203,25 @@ const animate = () => {
   orbitControls.update();
   flyControls.update(delta);
 
-  renderer!.render(scene!, camera!);
+  // 地板颜色脉冲
+  // 计算已过去的时间
+  let elapsed = Date.now() - start;
+  scene.children.forEach(function (child: any) {
+    if (child.name === 'floorTile') {
+      let originPoint = new THREE.Vector3(0, 0, 0); // 坐标原点
+      let distance = child.position.distanceTo(originPoint); // 计算Mesh离原点的距离
+      let value = Math.sin((distance / 3000) * Math.PI * 2 - elapsed / 1000); // 计算正弦值
+      let colorValue = map(value, -1, 1, 0, 1); // 将正弦函数值重新映射到 0 到 1
+      child.material.color.setRGB(colorValue, colorValue, 1);
+    }
+  });
 
-  // 更新坐标
-  pos.x = Number(camera.position.x).toFixed(2);
-  pos.y = Number(camera.position.y).toFixed(2);
-  pos.z = Number(camera.position.z).toFixed(2);
+  renderer.render(scene!, camera!);
+};
+
+// 映射函数
+const map = (value: any, start1: any, stop1: any, start2: any, stop2: any) => {
+  return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
 };
 
 // const roamingMsg = ref<any>({})
@@ -246,7 +251,7 @@ const switchRoamingMode = () => {
       duration: 0,
       type: "success",
       plain: true,
-      offset: 60
+      offset: 60,
     });
   } else {
     // 关闭漫游模式时，启用 OrbitControls
