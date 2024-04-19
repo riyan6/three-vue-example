@@ -35,15 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import * as THREE from "three";
 import { onBeforeUnmount, onMounted, ref, h } from "vue";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { FlyControls } from "three/addons/controls/FlyControls.js";
-import cxjPath from "@/assets/models/cxj1.glb";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { useSprite } from "./scene";
 import { ElMessage } from "element-plus";
-// import useLightCircle from './scene/useLightCircle'
+import useChengji from "./scene/chengxingji";
 
 // 显示两边信息
 const showBothSideInfo = ref(true);
@@ -53,15 +47,7 @@ const isRoamingMode = ref(false);
 const dataScreenRef = ref<HTMLElement | any>(null);
 const sceneRef = ref<HTMLElement | any>(null);
 
-const clock = new THREE.Clock();
-let scene: THREE.Scene | any = null;
-let camera: THREE.PerspectiveCamera | any = null;
-let renderer: THREE.WebGLRenderer | any = null;
-let orbitControls: OrbitControls | any = null;
-let flyControls: FlyControls | any = null;
-
-const { createCanvasSprite } = useSprite();
-// const { createLightCircle, lightCircleLoop } = useLightCircle();
+const { init, sceneResize, openFlyControls, openOrbitControls } = useChengji();
 
 onMounted(() => {
   if (dataScreenRef.value) {
@@ -69,7 +55,7 @@ onMounted(() => {
     dataScreenRef.value.style.width = `1920px`;
     dataScreenRef.value.style.height = `1080px`;
   }
-  init();
+  init(sceneRef);
   window.addEventListener("resize", onWindowResize);
 });
 
@@ -77,161 +63,13 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", onWindowResize);
 });
 
-// 开始时间
-let start = Date.now();
-
-const init = () => {
-  // scene
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x252f4a);
-
-  // renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(sceneRef.value!.clientWidth, sceneRef.value!.clientHeight);
-  sceneRef.value!.appendChild(renderer.domElement);
-
-  // camera
-  camera = new THREE.PerspectiveCamera(
-    60,
-    sceneRef.value!.clientWidth / sceneRef.value!.clientHeight,
-    1,
-    2500
-  );
-  camera.position.set(758, 182, 21);
-
-  // orbitControls
-  orbitControls = new OrbitControls(camera, renderer.domElement);
-  orbitControls.enableDamping = true;
-  orbitControls.dampingFactor = 0.05;
-  orbitControls.screenSpacePanning = false;
-  orbitControls.minDistance = 100;
-  orbitControls.maxDistance = 1000;
-  orbitControls.maxPolarAngle = Math.PI / 2;
-
-  // flyControls
-  flyControls = new FlyControls(camera, renderer.domElement);
-  flyControls.movementSpeed = 500;
-  flyControls.domElement = renderer.domElement;
-  flyControls.rollSpeed = Math.PI / 24;
-  flyControls.autoForward = false;
-  flyControls.dragToLook = false;
-  flyControls.enabled = false;
-
-  // lights
-  const dirLight1 = new THREE.DirectionalLight(0xffffff, 3);
-  dirLight1.position.set(1, 1, 1);
-  scene.add(dirLight1);
-
-  const dirLight2 = new THREE.DirectionalLight(0x002288, 3);
-  dirLight2.position.set(-1, -1, -1);
-  scene.add(dirLight2);
-
-  // 添加地板
-  const textureLoader = new THREE.TextureLoader();
-
-  textureLoader.load("/images/geometry10.png", function (texture) {
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
-    const grids = 25;
-    const singleGridSize = 3000 / grids;
-
-    for (let i = 0; i < grids; i++) {
-      for (let j = 0; j < grids; j++) {
-        const planeGeometry = new THREE.PlaneGeometry(
-          singleGridSize,
-          singleGridSize
-        );
-        planeGeometry.rotateX(-Math.PI / 2);
-
-        const planeMaterial = new THREE.MeshLambertMaterial({
-          map: texture,
-          transparent: true,
-          // 在这里设置材质的颜色
-          color: new THREE.Color("#2f5dbd"),
-        });
-
-        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-        plane.name = 'floorTile'
-        plane.position.y = -200;
-        plane.position.x = (i + 0.5 - grids / 2) * singleGridSize;
-        plane.position.z = (j + 0.5 - grids / 2) * singleGridSize;
-        scene.add(plane);
-      }
-    }
-  });
-
-  const ambientLight = new THREE.AmbientLight(0xffffff);
-  scene.add(ambientLight);
-
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-  directionalLight.position.set(1, 1, 1).normalize();
-  scene.add(directionalLight);
-
-  // 添加机台模型
-  const gltfLoader = new GLTFLoader();
-  gltfLoader.load(cxjPath, (obj) => {
-    const model = obj.scene;
-    model.scale.set(500, 500, 500);
-    model.position.set(0, 0, 0);
-    // 计算模型的边界
-    const box = new THREE.Box3().setFromObject(model);
-    // 计算模型的高度
-    const modelHeight = box.max.y - box.min.y;
-    // 将模型沿y轴向下移动模型高度的一半，使其在原点处
-    model.position.y -= modelHeight;
-
-    const sprite = createCanvasSprite(
-      "机台名称:包装机1#  当前牌号:牌号A  运行状态：正常运行"
-    );
-    model.children.push(sprite);
-    // 场景添加模型
-    scene.add(model);
-  });
-
-  // 动画
-  animate();
-};
-
-const animate = () => {
-  const delta = clock.getDelta();
-  // lightCircleLoop(scene)
-
-  requestAnimationFrame(animate);
-  orbitControls.update();
-  flyControls.update(delta);
-
-  // 地板颜色脉冲
-  // 计算已过去的时间
-  let elapsed = Date.now() - start;
-  scene.children.forEach(function (child: any) {
-    if (child.name === 'floorTile') {
-      let originPoint = new THREE.Vector3(0, 0, 0); // 坐标原点
-      let distance = child.position.distanceTo(originPoint); // 计算Mesh离原点的距离
-      let value = Math.sin((distance / 3000) * Math.PI * 2 - elapsed / 1000); // 计算正弦值
-      let colorValue = map(value, -1, 1, 0, 1); // 将正弦函数值重新映射到 0 到 1
-      child.material.color.setRGB(colorValue, colorValue, 1);
-    }
-  });
-
-  renderer.render(scene!, camera!);
-};
-
-// 映射函数
-const map = (value: any, start1: any, stop1: any, start2: any, stop2: any) => {
-  return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
-};
-
 // const roamingMsg = ref<any>({})
 // 在el-button点击事件触发时，切换漫游模式
 const switchRoamingMode = () => {
   isRoamingMode.value = !isRoamingMode.value;
   if (isRoamingMode.value) {
     // 开启漫游模式时，禁用 OrbitControls
-    orbitControls.enabled = false;
-    flyControls.enabled = true;
+    openFlyControls();
     // WASD移动，R|F上|下，Q|E滚动，上|下俯仰，左|右偏航
     ElMessage({
       message: h("p", { style: "line-height: 1; font-size: 14px" }, [
@@ -255,8 +93,7 @@ const switchRoamingMode = () => {
     });
   } else {
     // 关闭漫游模式时，启用 OrbitControls
-    orbitControls.enabled = true;
-    flyControls.enabled = false;
+    openOrbitControls();
     ElMessage.closeAll();
   }
 };
@@ -276,10 +113,7 @@ const getScale = (width = 1920, height = 1080) => {
 };
 
 const onWindowResize = () => {
-  camera!.aspect = sceneRef.value!.clientWidth / sceneRef.value!.clientHeight;
-  camera!.updateProjectionMatrix();
-  renderer!.setSize(sceneRef.value!.clientWidth, sceneRef.value!.clientHeight);
-
+  sceneResize(sceneRef);
   resize();
 };
 </script>
