@@ -1,57 +1,65 @@
-import * as THREE from 'three'
+import * as THREE from "three";
 
+// 机台名称:包装机1#
+// 当前牌号:牌号A
+// 运行状态：正常运行
 export default function () {
-  const createCanvasSprite = (name: string): THREE.Sprite => {
+  const createCanvasSprite = (names: string[]): THREE.Sprite => {
     // 创建一个canvas对象，绘制几何图案或添加文字
     const canvas = document.createElement("canvas");
-    const arr = name.split(""); //分割为单独字符串
-    let num = 0;
-    const reg = /[\u4e00-\u9fa5]/;
-    for (let i = 0; i < arr.length; i++) {
-      if (reg.test(arr[i])) {
-        //判断是不是汉字
-        num += 1;
-      } else {
-        num += 0.5; //英文字母或数字累加0.5
+
+    let max = 0;
+    names.forEach((r) => {
+      const arr = r.split(""); //分割为单独字符串
+      let num = 0;
+      const reg = /[\u4e00-\u9fa5]/;
+      for (let i = 0; i < arr.length; i++) {
+        if (reg.test(arr[i])) {
+          //判断是不是汉字
+          num += 1;
+        } else {
+          num += 0.5; //英文字母或数字累加0.5
+        }
       }
-    }
+      max = Math.max(max, num);
+    });
+
     // 根据字符串符号类型和数量、文字font-size大小来设置canvas画布宽高度
-    const h = 80; //根据渲染像素大小设置，过大性能差，过小不清晰
-    const w = h + num * 32;
+    //根据渲染像素大小设置，过大性能差，过小不清晰
+    const h = 320;
+    const w = h + (max * 32);
     canvas.width = w;
     canvas.height = h;
-    const h1 = h * 0.8;
+
     const c: CanvasRenderingContext2D | any = canvas.getContext("2d");
+
     // 定义轮廓颜色，黑色半透明
     c.fillStyle = "rgba(0,0,0,0.5)";
-    // 绘制半圆+矩形轮廓
-    const R = h1 / 2;
-    c.arc(R, R, R, -Math.PI / 2, Math.PI / 2, true); //顺时针半圆
-    c.arc(w - R, R, R, Math.PI / 2, -Math.PI / 2, true); //顺时针半圆
-    c.fill();
-    // 绘制箭头
-    c.beginPath();
-    const h2 = h - h1;
-    c.moveTo(w / 2 - h2 * 0.6, h1);
-    c.lineTo(w / 2 + h2 * 0.6, h1);
-    c.lineTo(w / 2, h);
-    c.fill();
+    c.fillRect(0, 0, canvas.width, canvas.height);
+
     // 文字
     c.beginPath();
-    c.translate(w / 2, h1 / 2);
-    c.fillStyle = "#ffffff"; //文本填充颜色
-    c.font = "normal 32px 宋体"; //字体样式设置
-    c.textBaseline = "middle"; //文本与fillText定义的纵坐标
-    c.textAlign = "center"; //文本居中(以fillText定义的横坐标)
-    c.fillText(name, 0, 0);
-    
+    c.translate(w / 2, h / 4);
+    // 文本填充颜色
+    c.fillStyle = "#ffffff";
+    // 字体样式设置
+    c.font = "normal 48px 宋体";
+    // 文本与fillText定义的纵坐标
+    c.textBaseline = "middle";
+    // 文本居中(以fillText定义的横坐标)
+    c.textAlign = "center";
+    names.forEach((r: string, index: number) => {
+      c.fillText(r, 0, index * 90);
+    })
+
     // 创建
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMaterial = new THREE.SpriteMaterial({
       map: texture,
     });
     const sprite = new THREE.Sprite(spriteMaterial);
-    const y = 30; //精灵y方向尺寸
+    // 精灵y方向尺寸
+    const y = 120;
     // sprite宽高比和canvas画布保持一致
     //精灵x方向尺寸
     const x = (canvas.width / canvas.height) * y;

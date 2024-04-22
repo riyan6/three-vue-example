@@ -37,7 +37,8 @@ export default function () {
       1,
       2500
     );
-    camera.position.set(758, 182, 21);
+    camera.position.set(432.8, 5.1, 655);
+    camera.rotation.set(-9.7, 0.89, 7.5);
 
     // orbitControls
     orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -47,6 +48,7 @@ export default function () {
     orbitControls.minDistance = 100;
     orbitControls.maxDistance = 1000;
     orbitControls.maxPolarAngle = Math.PI / 2;
+    orbitControls.target.set(-219.6, 4.6, 128.2);
 
     // flyControls
     flyControls = new FlyControls(camera, renderer.domElement);
@@ -122,9 +124,7 @@ export default function () {
       // 将模型沿y轴向下移动模型高度的一半，使其在原点处
       model.position.y -= modelHeight;
 
-      const sprite = createCanvasSprite(
-        "机台名称:包装机1#  当前牌号:牌号A  运行状态：正常运行"
-      );
+      const sprite = createCanvasSprite(["机台名称：包装机1#", "当前牌号：牌号A", "运行状态：正常运行"]);
       model.children.push(sprite);
 
       // 场景添加模型
@@ -187,10 +187,17 @@ export default function () {
     renderer!.setSize(sceneRef.value.clientWidth, sceneRef.value.clientHeight);
   }
 
+  const getVision = () => {
+    console.log('target', orbitControls.target.x, orbitControls.target.y, orbitControls.target.z)
+    console.log('position', camera.position.x, camera.position.y, camera.position.z)
+    console.log('rotation', camera.rotation._x, camera.rotation._y, camera.rotation._z)
+  }
+
   return {
     init,
     sceneResize,
     openOrbitControls,
-    openFlyControls
+    openFlyControls,
+    getVision
   };
 }

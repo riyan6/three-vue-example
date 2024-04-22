@@ -28,6 +28,7 @@
             @click="showBothSideInfo = !showBothSideInfo"
             >显示两侧信息：{{ showBothSideInfo ? "是" : "否" }}</el-button
           >
+          <el-button type="success" @click="getVision">获取视角信息</el-button>
         </div>
       </div>
     </div>
@@ -37,17 +38,21 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, h } from "vue";
 import { ElMessage } from "element-plus";
-import useChengji from "./scene/chengxingji";
+import useChengXingJi from "./scene/chengxingji";
+// import useFengXiangJi from "./scene/fengxiangji";
+// import useWeiSiJi from './scene/weisiji';
 
 // 显示两边信息
-const showBothSideInfo = ref(true);
+const showBothSideInfo = ref(false);
 // 漫游模式
 const isRoamingMode = ref(false);
 
 const dataScreenRef = ref<HTMLElement | any>(null);
 const sceneRef = ref<HTMLElement | any>(null);
 
-const { init, sceneResize, openFlyControls, openOrbitControls } = useChengji();
+const { init, sceneResize, openFlyControls, openOrbitControls, getVision } = useChengXingJi();
+// const { init, sceneResize, openFlyControls, openOrbitControls, getVision } = useFengXiangJi();
+// const { init, sceneResize, openFlyControls, openOrbitControls, getVision } = useWeiSiJi();
 
 onMounted(() => {
   if (dataScreenRef.value) {
