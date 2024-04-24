@@ -124,7 +124,7 @@ export default function () {
       // 将模型沿y轴向下移动模型高度的一半，使其在原点处
       model.position.y -= modelHeight;
 
-      const sprite = createCanvasSprite(["机台名称：包装机1#", "当前牌号：牌号A", "运行状态：正常运行"]);
+      const sprite = createCanvasSprite(["机台名称:包装机1#", "当前牌号:牌号A", "运行状态:正常运行"]);
       model.children.push(sprite);
 
       // 场景添加模型
@@ -137,7 +137,6 @@ export default function () {
 
   const animate = () => {
     const delta = clock.getDelta();
-    // lightCircleLoop(scene)
 
     requestAnimationFrame(animate);
     orbitControls.update();

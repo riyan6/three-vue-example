@@ -30,6 +30,7 @@
           >
           <el-button type="success" @click="getVision">获取视角信息</el-button>
         </div>
+        <div class="data-screen-footer-bg"></div>
       </div>
     </div>
   </div>
