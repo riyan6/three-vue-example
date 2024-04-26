@@ -39,6 +39,11 @@ const routes: Readonly<RouteRecordRaw[]> = [
         name: 'dataScreen',
         component: () => import('@/views/dataScreen/index.vue')
     },
+    {
+        path: '/city',
+        name: 'city',
+        component: () => import('@/views/city/index.vue')
+    },
     // {
     //     path: '/tres',
     //     name: 'tres',
